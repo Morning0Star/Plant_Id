@@ -6,7 +6,7 @@ from PIL import Image
 import numpy as np
 
 # YOLOv5 model and PlantNET API configuration
-MODEL_PATH = 'C:/Users/kusha/OneDrive/Desktop/yolov11_project/yolov5/runs/train/exp/weights/best.pt'
+MODEL_PATH = 'models/best.pt'
 API_KEY = '2b10sFh3wPJUbaYhfnHONlQO'
 API_URL = 'https://my-api.plantnet.org/v2/identify/all'
 
