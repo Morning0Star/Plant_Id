@@ -11,10 +11,17 @@ API_KEY = '2b10sFh3wPJUbaYhfnHONlQO'
 API_URL = 'https://my-api.plantnet.org/v2/identify/all'
 
 # Load YOLOv5 model
-model = torch.hub.load('ultralytics/yolov5', 'custom', path=MODEL_PATH)
+try:
+    model = torch.hub.load('ultralytics/yolov5', 'custom', path=MODEL_PATH)
+except Exception as e:
+    print(f"Error loading model: {e}")
+    model = None  # Handle model not loading scenario
 
 # Function to process an image
 def process_image(image_data, uploaded_image_name):
+    if model is None:
+        return {"error": "Model failed to load."}
+
     # Convert byte data to a NumPy array
     np_img = np.frombuffer(image_data, np.uint8)
     image = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
@@ -46,20 +53,26 @@ def process_image(image_data, uploaded_image_name):
             'nb-results': 5,
             'no-reject': False
         }
-        response = requests.post(API_URL, params=params, files=files)
 
-        if response.status_code == 200:
-            response_data = response.json()
-            if response_data.get('results'):
-                best_match = max(response_data['results'], key=lambda x: x['score'])
-                identified_plant = best_match['species']['scientificNameWithoutAuthor']
-                confidence_rate = best_match['score']
+        try:
+            response = requests.post(API_URL, params=params, files=files)
 
-                # Store results in a list
-                results_list.append({
-                    'Cropped Image': img_buffer.getvalue(),  # Return the raw byte data
-                    'Identified Plant': identified_plant,
-                    'Confidence': confidence_rate
-                })
+            if response.status_code == 200:
+                response_data = response.json()
+                if response_data.get('results'):
+                    best_match = max(response_data['results'], key=lambda x: x['score'])
+                    identified_plant = best_match['species']['scientificNameWithoutAuthor']
+                    confidence_rate = best_match['score']
+
+                    # Store results in a list
+                    results_list.append({
+                        'Cropped Image': img_buffer.getvalue(),  # Return the raw byte data
+                        'Identified Plant': identified_plant,
+                        'Confidence': confidence_rate
+                    })
+            else:
+                print(f"API request failed with status code: {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            print(f"API request error: {e}")
 
     return results_list
